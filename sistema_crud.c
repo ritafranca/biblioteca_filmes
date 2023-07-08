@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
+#include <locale.h>
 
 typedef struct {
     int id;
@@ -9,6 +11,7 @@ typedef struct {
     char diretor[50];
     float media_avaliacao;
     int favorito;
+    char comentario[400];
 } Filme;
 
 void cadastrarFilme(FILE *arq) {
@@ -29,25 +32,28 @@ void cadastrarFilme(FILE *arq) {
     printf("Digite o nome do filme: ");
     scanf(" %[^\n]", novoFilme.nome);
 
-    printf("Digite o ano de lançamento: ");
+    printf("Digite o ano de lancamento: ");
     scanf("%d", &novoFilme.ano);
 
     printf("Digite o nome do diretor: ");
     scanf(" %[^\n]", novoFilme.diretor);
 
-    // Validar a média de avaliação
+    // Validar a media de avaliacao
     while (1) {
-        printf("Quantas estrelas você dá (0.5 a 5.0): ");
+        printf("Quantas estrelas voce da (0.5 a 5.0): ");
         scanf("%f", &novoFilme.media_avaliacao);
 
         if (novoFilme.media_avaliacao >= 0.5 && novoFilme.media_avaliacao <= 5.0) {
             break;
         } else if (novoFilme.media_avaliacao > 5.0) {
-            printf("Só é permitido dar até 5 estrelas!\n");
+            printf("So e permitido dar ate 5 estrelas!\n");
         } else if (novoFilme.media_avaliacao < 0.5) {
-            printf("É preciso dar pelo menos 0.5!\n");
+            printf("E preciso dar pelo menos 0.5!\n");
         }
     }
+
+    printf("Digite um comentario sobre o filme (maximo 400 caracteres): ");
+    scanf(" %[^\n]", novoFilme.comentario);
 
     fwrite(&novoFilme, sizeof(Filme), 1, arq);
     printf("Filme cadastrado com sucesso!\n");
@@ -57,7 +63,7 @@ void listarFilmes(FILE *arq) {
     rewind(arq);
     Filme filme;
 
-    int encontrouFilme = 0; // Variável para verificar se encontrou algum filme
+    int encontrouFilme = 0; // Variavel para verificar se encontrou algum filme
 
     printf("Filmes cadastrados:\n");
 
@@ -65,7 +71,7 @@ void listarFilmes(FILE *arq) {
         encontrouFilme = 1; // Indica que foi encontrado pelo menos um filme
         printf("ID: %d\n", filme.id);
         printf("Nome: %s\n", filme.nome);
-        printf("Ano de lançamento: %d\n", filme.ano);
+        printf("Ano de lancamento: %d\n", filme.ano);
         printf("Diretor: %s\n", filme.diretor);
         printf("Nota que voce deu: %.2f\n", filme.media_avaliacao);
         printf("\n");
@@ -91,7 +97,7 @@ void favoritarFilme(FILE *arq) {
         if (filme.id == id) {
             encontrouFilme = 1;
             filme.favorito = 1; // Marcar o filme como favorito
-            fseek(arq, -sizeof(Filme), SEEK_CUR); // Voltar para a posição correta no arquivo
+            fseek(arq, -sizeof(Filme), SEEK_CUR); // Voltar para a posicao correta no arquivo
             fwrite(&filme, sizeof(Filme), 1, arq); // Atualizar o registro do filme no arquivo
             printf("Filme favoritado com sucesso!\n");
             break;
@@ -107,7 +113,7 @@ void listarFavoritos(FILE *arq) {
     rewind(arq);
     Filme filme;
 
-    int encontrouFavorito = 0; // Variável para verificar se encontrou algum filme favorito
+    int encontrouFavorito = 0; // Variavel para verificar se encontrou algum filme favorito
 
     printf("Filmes favoritos:\n");
 
@@ -116,9 +122,9 @@ void listarFavoritos(FILE *arq) {
             encontrouFavorito = 1;
             printf("ID: %d\n", filme.id);
             printf("Nome: %s\n", filme.nome);
-            printf("Ano de lançamento: %d\n", filme.ano);
+            printf("Ano de lancamento: %d\n", filme.ano);
             printf("Diretor: %s\n", filme.diretor);
-            printf("Nota que você deu: %.2f\n", filme.media_avaliacao);
+            printf("Nota que voce deu: %.2f\n", filme.media_avaliacao);
             printf("\n");
         }
     }
@@ -143,7 +149,7 @@ void removerFavorito(FILE *arq) {
         if (filme.id == id) {
             encontrouFilme = 1;
             filme.favorito = 0; // Remover o filme dos favoritos
-            fseek(arq, -sizeof(Filme), SEEK_CUR); // Voltar para a posição correta no arquivo
+            fseek(arq, -sizeof(Filme), SEEK_CUR); // Voltar para a posicao correta no arquivo
             fwrite(&filme, sizeof(Filme), 1, arq); // Atualizar o registro do filme no arquivo
             printf("Filme removido dos favoritos com sucesso!\n");
             break;
@@ -155,6 +161,29 @@ void removerFavorito(FILE *arq) {
     }
 }
 
+void verComentarios(FILE *arq) {
+    rewind(arq);
+    Filme filme;
+
+    int encontrouComentario = 0; // Variavel para verificar se encontrou algum filme com comentario
+
+    printf("Filmes com comentarios:\n");
+
+    while (fread(&filme, sizeof(Filme), 1, arq) == 1) {
+        if (strlen(filme.comentario) > 0) {
+            encontrouComentario = 1;
+            printf("ID: %d\n", filme.id);
+            printf("Nome: %s\n", filme.nome);
+            printf("Comentario: %s\n", filme.comentario);
+            printf("\n");
+        }
+    }
+
+    if (!encontrouComentario) {
+        printf("Nao ha filmes com comentarios!\n");
+    }
+}
+
 void deletarFilme(FILE *arq) {
     int id;
     printf("Digite o ID do filme a ser removido: ");
@@ -163,28 +192,27 @@ void deletarFilme(FILE *arq) {
     Filme filme;
     int encontrouFilme = 0;
 
-    FILE *tempArq = fopen("temp.bin", "wb"); // Abrir um arquivo temporário para escrita
+    FILE *tempArq = fopen("temp.bin", "wb"); // Abrir um arquivo temporario para escrita
 
     rewind(arq);
-    // Percorrer o arquivo para encontrar o filme pelo ID e copiar os outros filmes para o arquivo temporário
+    // Percorrer o arquivo para encontrar o filme pelo ID e copiar os outros filmes para o arquivo temporario
     while (fread(&filme, sizeof(Filme), 1, arq) == 1) {
         if (filme.id == id) {
             encontrouFilme = 1;
         } else {
-            fwrite(&filme, sizeof(Filme), 1, tempArq); // Copiar o```c
-        fwrite(&filme, sizeof(Filme), 1, tempArq); // Copiar o filme para o arquivo temporário
+            fwrite(&filme, sizeof(Filme), 1, tempArq); // Copiar o filme para o arquivo temporario
+        }
     }
-    
-    }
+
     fclose(arq);
     fclose(tempArq);
 
     if (encontrouFilme) {
         remove("filmes.bin"); // Remover o arquivo original
-        rename("temp.bin", "filmes.bin"); // Renomear o arquivo temporário para substituir o arquivo original
+        rename("temp.bin", "filmes.bin"); // Renomear o arquivo temporario para substituir o arquivo original
         printf("Filme removido com sucesso!\n");
     } else {
-        remove("temp.bin"); // Remover o arquivo temporário
+        remove("temp.bin"); // Remover o arquivo temporario
         printf("Nao existe filme com esse ID na sua lista!\n");
     }
 
@@ -192,6 +220,7 @@ void deletarFilme(FILE *arq) {
 }
 
 int main() {
+    setlocale(LC_ALL, ""); // Definir a localidade correta para exibir acentos corretamente
     FILE *arq = fopen("filmes.bin", "rb+");
 
     if (arq == NULL) {
@@ -212,8 +241,9 @@ int main() {
         printf("4. Listar filmes favoritos\n");
         printf("5. Remover filme dos favoritos\n");
         printf("6. Deletar filme\n");
+        printf("7. Ver comentarios\n");
         printf("0. Sair\n");
-        printf("Digite a opçao desejada: ");
+        printf("Digite a opcao desejada: ");
         scanf("%d", &opcao);
 
         switch (opcao) {
@@ -235,11 +265,14 @@ int main() {
             case 6:
                 deletarFilme(arq);
                 break;
+            case 7:
+                verComentarios(arq);
+                break;
             case 0:
                 fclose(arq);
                 return 0;
             default:
-                printf("Opção inválida!\n");
+                printf("Opcao invalida!\n");
                 break;
         }
     }
