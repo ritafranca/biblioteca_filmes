@@ -174,7 +174,7 @@ void verComentarios(FILE *arq) {
             encontrouComentario = 1;
             printf("ID: %d\n", filme.id);
             printf("Nome: %s\n", filme.nome);
-            printf("Comentario: %s\n", filme.comentario);
+            printf("Comentario: %s\n", filme.comentario);// Exibe as informações do filme que possui comentário
             printf("\n");
         }
     }
@@ -219,6 +219,99 @@ void deletarFilme(FILE *arq) {
     arq = fopen("filmes.bin", "rb+"); // Abrir novamente o arquivo original para leitura e escrita
 }
 
+void editarFilme(FILE *arq) {
+    int id;
+    printf("Digite o ID do filme a ser editado: ");
+    scanf("%d", &id);
+
+    Filme filme;
+    int encontrouFilme = 0;
+
+    rewind(arq);
+
+    // Percorrer o arquivo para encontrar o filme pelo ID
+    while (fread(&filme, sizeof(Filme), 1, arq) == 1) {
+        if (filme.id == id) {
+            encontrouFilme = 1;
+
+            int opcao;
+
+            printf("Filme encontrado:\n");
+            printf("ID: %d\n", filme.id);
+            printf("Nome: %s\n", filme.nome);
+            printf("Ano de lancamento: %d\n", filme.ano);
+            printf("Diretor: %s\n", filme.diretor);
+            printf("Nota que voce deu: %.2f\n", filme.media_avaliacao);
+            printf("Comentario: %s\n", filme.comentario);
+            printf("\n");
+
+            printf("O que deseja editar?\n");
+            printf("1. Nome\n");
+            printf("2. Ano de lancamento\n");
+            printf("3. Diretor\n");
+            printf("4. Nota de avaliacao\n");
+            printf("5. Comentario\n");
+            printf("0. Sair\n");
+            printf("Digite a opcao desejada: ");
+            scanf("%d", &opcao);
+
+            switch (opcao) {
+                case 1:
+                    printf("Digite o novo nome: ");
+                    getchar(); // Consumir o caractere de nova linha pendente
+                    fgets(filme.nome, sizeof(filme.nome), stdin);
+                    filme.nome[strcspn(filme.nome, "\n")] = '\0'; // Remover o caractere de nova linha lido pelo fgets
+                    break;
+                case 2:
+                    printf("Digite o novo ano de lancamento: ");
+                    scanf("%d", &filme.ano);
+                    break;
+                case 3:
+                    printf("Digite o novo diretor: ");
+                    getchar(); // Consumir o caractere de nova linha pendente
+                    fgets(filme.diretor, sizeof(filme.diretor), stdin);
+                    filme.diretor[strcspn(filme.diretor, "\n")] = '\0'; // Remover o caractere de nova linha lido pelo fgets
+                    break;
+                case 4:
+                    // Validar a nova media de avaliacao
+                    while (1) {
+                        printf("Digite a nova nota (0.5 a 5.0): ");
+                        scanf("%f", &filme.media_avaliacao);
+
+                        if (filme.media_avaliacao >= 0.5 && filme.media_avaliacao <= 5.0) {
+                            break;
+                        } else if (filme.media_avaliacao > 5.0) {
+                            printf("So e permitido dar ate 5 estrelas!\n");
+                        } else if (filme.media_avaliacao < 0.5) {
+                            printf("E preciso dar pelo menos 0.5!\n");
+                        }
+                    }
+                    break;
+                case 5:
+                    printf("Digite o novo comentario (maximo 400 caracteres): ");
+                    getchar(); // Consumir o caractere de nova linha pendente
+                    fgets(filme.comentario, sizeof(filme.comentario), stdin);
+                    filme.comentario[strcspn(filme.comentario, "\n")] = '\0'; // Remover o caractere de nova linha lido pelo fgets
+                    break;
+                case 0:
+                    return;
+                default:
+                    printf("Opcao invalida!\n");
+                    break;
+            }
+
+            fseek(arq, -sizeof(Filme), SEEK_CUR); // Voltar para a posicao correta no arquivo
+            fwrite(&filme, sizeof(Filme), 1, arq); // Atualizar o registro do filme no arquivo
+            printf("Informacoes do filme atualizadas com sucesso!\n");
+            break;
+        }
+    }
+
+    if (!encontrouFilme) {
+        printf("Nao existe filme com esse ID na sua lista!\n");
+    }
+}
+
 int main() {
     setlocale(LC_ALL, ""); // Definir a localidade correta para exibir acentos corretamente
     FILE *arq = fopen("filmes.bin", "rb+");
@@ -242,35 +335,39 @@ int main() {
         printf("5. Remover filme dos favoritos\n");
         printf("6. Deletar filme\n");
         printf("7. Ver comentarios\n");
+        printf("8. Editar filme\n");
         printf("0. Sair\n");
         printf("Digite a opcao desejada: ");
         scanf("%d", &opcao);
 
         switch (opcao) {
             case 1:
-                cadastrarFilme(arq);
+                cadastrarFilme(arq); // Chama a função para cadastrar um novo filme
                 break;
             case 2:
-                listarFilmes(arq);
+                listarFilmes(arq); // Chama a função para listar os filmes cadastrados
                 break;
             case 3:
-                favoritarFilme(arq);
+                favoritarFilme(arq); // Chama a função para favoritar um filme
                 break;
             case 4:
-                listarFavoritos(arq);
+                listarFavoritos(arq); // Chama a função para listar os filmes favoritos
                 break;
             case 5:
-                removerFavorito(arq);
+                removerFavorito(arq); // Chama a função para remover um filme dos favoritos
                 break;
             case 6:
-                deletarFilme(arq);
+                deletarFilme(arq); // Chama a função para deletar um filme
                 break;
             case 7:
-                verComentarios(arq);
+                verComentarios(arq); // Chama a função para ver os filmes com comentários
+                break;
+            case 8:
+                editarFilme(arq); // Chama a função para editar um filme
                 break;
             case 0:
                 fclose(arq);
-                return 0;
+                return 0; // Encerra o programa
             default:
                 printf("Opcao invalida!\n");
                 break;
